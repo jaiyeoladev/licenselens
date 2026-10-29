@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf_field with context %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Pricing</h1>
+    <p class="muted">Monthly price per seat used to calculate waste. The defaults are <strong>indicative list prices</strong> — replace them with the prices on your agreement (CSP, EA or MCA) for accurate savings.</p>
+  </div>
+</div>
+<form method="post" action="/pricing" class="card">
+  {{ csrf_field() }}
+  <div class="table-wrap">
+  <table class="table compact">
+    <thead><tr><th>Product</th><th>SKU part number</th><th>In tenant</th><th class="num">Indicative default</th><th>Your price / seat / month ({{ config.currency_symbol }})</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.name }}</td>
+      <td><code>{{ r.part }}</code></td>
+      <td>{{ "Yes" if r.in_tenant else "—" }}</td>
+      <td class="num">{{ r.default|money(2) if r.default else "—" }}</td>
+      <td>{% if r.free %}<span class="muted small">Free SKU</span>{% else %}<input name="price__{{ r.part }}" type="number" min="0" step="0.01" value="{{ r.price or '' }}" aria-label="Price for {{ r.name }}" {{ 'disabled' if not is_admin }}>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if is_admin %}<div class="btn-row"><button class="btn" type="submit">Save prices</button></div>{% endif %}
+</form>
+{% endblock %}

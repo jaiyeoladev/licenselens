@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty, pager %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Licensed users</h1>
+    <p class="muted">{{ total }} user(s) · {{ total_cost|money }} a month in paid licences</p>
+  </div>
+</div>
+<form class="filters card" method="get" action="/users">
+  <label>Show
+    <select name="filter">
+      {% for k, label in [("all","All licensed users"),("flagged","Flagged for review"),("inactive","Inactive or never signed in"),("disabled","Disabled accounts"),("overlap","Overlapping licences"),("guests","Guests")] %}
+      <option value="{{ k }}" {{ 'selected' if filter == k }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="grow">Search <input name="q" value="{{ q }}" placeholder="Name, UPN or department"></label>
+  <button class="btn" type="submit">Apply</button>
+</form>
+{% if rows %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>User</th><th>Department</th><th>Status</th><th>Last activity</th><th>Paid licences</th><th class="num">Monthly cost</th><th>Flags</th></tr></thead>
+  <tbody>
+  {% for u in rows %}
+  <tr>
+    <td><strong>{{ u.displayName }}</strong><div class="small muted">{{ u.upn }}</div></td>
+    <td>{{ u.department }}</td>
+    <td>{% if not u.enabled %}<span class="tag tag-danger">Disabled</span>{% else %}<span class="tag tag-ok">Enabled</span>{% endif %}{% if u.userType == "Guest" %} <span class="tag tag-warn">Guest</span>{% endif %}</td>
+    <td>{% if u.signinKnown %}{{ u.lastActivity|ago }}{% else %}<span class="muted">unknown</span>{% endif %}</td>
+    <td>{% for p in u.paid %}<span class="tag">{{ p }}</span>{% else %}<span class="muted small">free only</span>{% endfor %}</td>
+    <td class="num">{{ u.cost|money(2) }}</td>
+    <td>{% for r in u.rules %}<a class="tag tag-accent" href="/findings?rule={{ r }}&q={{ u.upn|urlencode }}">{{ r }}</a>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ pager(page, pages, qs) }}
+{% else %}
+{{ empty("No users match.") }}
+{% endif %}
+{% endblock %}

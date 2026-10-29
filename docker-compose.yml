@@ -1,0 +1,19 @@
+services:
+  licenselens:
+    build: .
+    image: licenselens:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - licenselens-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  licenselens-data:

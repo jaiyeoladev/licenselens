@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty, csrf_field with context %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>SaaS register</h1>
+    <p class="muted">{{ apps|length }} subscription(s) outside Microsoft 365 · {{ total|money }} a month. Rules for utilisation, renewal notice and overlap run on every scan.</p>
+  </div>
+  <div class="btn-row">
+    <a class="btn btn-ghost" href="/saas.csv">Export CSV</a>
+    {% if is_admin %}<a class="btn" href="/saas/new">Add subscription</a>{% endif %}
+  </div>
+</div>
+{% if apps %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Product</th><th>Category</th><th>Owner</th><th>Seats</th><th class="num">Monthly cost</th><th>Renewal</th><th>Notice by</th><th>Flags</th></tr></thead>
+  <tbody>
+  {% for a in apps %}
+  {% set notice_days = a.notice_days or 0 %}
+  <tr>
+    <td><a href="/saas/{{ a.id }}"><strong>{{ a.product }}</strong></a><div class="small muted">{{ a.vendor }} · {{ a.billing_cycle }}</div></td>
+    <td>{{ a.category or "—" }}</td>
+    <td>{{ a.owner or "—" }}</td>
+    <td>{% if a.seats_purchased %}{{ charts.meter(a.seats_used, a.seats_purchased, warn_below=0.8) }} <span class="small muted">{{ a.seats_used }}/{{ a.seats_purchased }}</span>{% else %}—{% endif %}</td>
+    <td class="num">{{ a.monthly_cost|money }}</td>
+    <td>{{ a.renewal_date|dt if a.renewal_date else "—" }}</td>
+    <td>{% if a.renewal_date %}{% set d = a.renewal_date|days_until %}{% if d is not none %}{% set nb = d - notice_days %}<span class="{{ 'text-danger' if 0 <= nb <= 14 else ('text-warn' if 0 <= nb <= 45 else '') }}">{{ "passed" if nb < 0 else "in " ~ nb ~ "d" }}</span>{% endif %}{% else %}—{% endif %}</td>
+    <td>{% for r in a.rules %}<span class="tag tag-accent">{{ r }}</span>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+{{ empty("No SaaS subscriptions recorded yet.", "/saas/new" if is_admin else "", "Add the first one") }}
+{% endif %}
+
+{% if is_admin %}
+<section class="card">
+  <h2>Import from CSV</h2>
+  <p class="small muted">Columns: <code>vendor, product, category, owner, seats_purchased, seats_used, monthly_cost, billing_cycle, renewal_date (YYYY-MM-DD), notice_days, notes</code>. Rows are added to the register. Export the current register to get a template.</p>
+  <form method="post" action="/saas/import" enctype="multipart/form-data" class="bulk">
+    {{ csrf_field() }}
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button class="btn btn-sm" type="submit">Import</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

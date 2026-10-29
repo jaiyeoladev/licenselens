@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Licences</h1>
+    <p class="muted">Purchased versus assigned seats for every SKU in the tenant. Prices come from the <a href="/pricing">Pricing</a> page.</p>
+  </div>
+</div>
+{% if rows %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Product</th><th class="num">Purchased</th><th class="num">Assigned</th><th class="num">Unassigned</th><th>Utilisation</th><th class="num">Price / seat</th><th class="num">Monthly cost</th><th class="num">Unassigned cost</th><th>Next renewal</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td><strong>{{ r.name }}</strong>{% if r.trial %} <span class="tag tag-warn">Trial</span>{% endif %}{% if r.free %} <span class="tag">Free</span>{% endif %}<div class="small muted"><code>{{ r.partNumber }}</code></div></td>
+    <td class="num">{{ "Unlimited" if r.enabled >= 100000 else r.enabled|num }}</td>
+    <td class="num">{{ r.consumed|num }}</td>
+    <td class="num">{{ "—" if r.free else r.unused|num }}</td>
+    <td>{% if not r.free and r.enabled %}{{ charts.meter(r.consumed, r.enabled, warn_below=0.9) }} <span class="small muted">{{ (r.consumed / r.enabled)|pct }}</span>{% else %}—{% endif %}</td>
+    <td class="num">{{ r.price|money(2) if r.price else "not set" }}</td>
+    <td class="num">{{ r.monthly|money if r.price and not r.free else "—" }}</td>
+    <td class="num {{ 'text-danger' if r.unused_cost and not r.free }}">{{ r.unused_cost|money if r.unused_cost and not r.free else "—" }}</td>
+    <td>{% if r.renewal %}{{ r.renewal|dt }} <div class="small muted">{{ r.renewal|ago }}</div>{% else %}—{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small muted">Annual-commitment seats can normally only be reduced at renewal. Remove licences from inactive and leaver accounts first, then lower the seat count before the renewal date.</p>
+{% else %}
+{{ empty("No licence data yet. Run a scan.", "/scans", "Go to scans") }}
+{% endif %}
+{% endblock %}

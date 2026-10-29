@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros.html" import kpi, sev, empty, findings_table %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% if not scan %}
+  {{ empty("No completed scan yet. Run a scan to see where licence spend is going.", "/scans", "Go to scans") }}
+{% else %}
+<div class="page-head">
+  <div>
+    <h1>{{ tenant.name or "Licence overview" }}</h1>
+    <p class="muted">Scan #{{ scan.id }} · {{ scan.started_at|dtt }} · savings are estimates based on your <a href="/pricing">price list</a></p>
+  </div>
+  <a class="btn btn-ghost" href="/report" target="_blank" rel="noopener">Printable report</a>
+</div>
+
+<section class="kpis">
+  {{ kpi("Identified waste", waste.total|money ~ "<span class='unit'>/mo</span>"|safe, (waste.total * 12)|money ~ " a year", "kpi-danger", "/findings?sort=cost") }}
+  {{ kpi("Licence utilisation", (assigned / purchased)|pct if purchased else "—", assigned|num ~ " of " ~ purchased|num ~ " paid seats assigned", "", "/licences") }}
+  {{ kpi("Inactive or leaver accounts", inactive_users, "licensed users to reclaim", "kpi-warn", "/users?filter=inactive") }}
+  {{ kpi("Tracked monthly spend", spend|money, saas_count ~ " SaaS apps + Microsoft 365", "", "/saas") }}
+</section>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Monthly waste by cause</h2><a class="small" href="/findings?sort=cost">All findings →</a></div>
+    {{ charts.hbar(waste_by_rule, fmt=fmt_money, label_width=250) }}
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Waste by department</h2><a class="small" href="/users?filter=flagged">Flagged users →</a></div>
+    {{ charts.hbar(waste_by_dept, fmt=fmt_money, empty="No user-level waste found") }}
+  </section>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Unassigned paid seats</h2><a class="small" href="/licences">Licences →</a></div>
+    {{ charts.hbar(unused_by_sku, empty="Every purchased seat is assigned") }}
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Contract value renewing (next 6 months)</h2></div>
+    {{ charts.columns(renewal_months, fmt=fmt_money) }}
+    <p class="small muted">Annualised value of Microsoft subscriptions and SaaS register contracts by renewal month.</p>
+  </section>
+</div>
+
+<div class="grid grid-2-1">
+  <section class="card">
+    <div class="card-head"><h2>Biggest savings</h2><a class="small" href="/findings?sort=cost">View all →</a></div>
+    {% if top %}{{ findings_table(top, show_cost=true) }}{% else %}<p class="muted">Nothing to save — nice.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Upcoming decisions</h2>
+    {% for f in renewals %}
+    <div class="stat-line"><span><a href="/findings/{{ f.id }}">{{ f.entity_name }}</a><div class="small muted">{{ f.title }}</div></span><span>{{ sev(f.severity) }}</span></div>
+    {% else %}
+    <p class="muted">No renewals or notice deadlines in the warning window.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

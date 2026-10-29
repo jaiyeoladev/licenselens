@@ -1,0 +1,9 @@
+{% if extra.waste %}
+<section class="card">
+  <h2>Savings summary</h2>
+  <div class="stat-line"><span>User licences to reclaim (leavers, inactive, guests, overlaps)</span><strong>{{ extra.waste.users|money }}/mo</strong></div>
+  <div class="stat-line"><span>Unassigned seats and under-used SaaS</span><strong>{{ extra.waste.other|money }}/mo</strong></div>
+  <div class="stat-line"><span>Total (de-duplicated)</span><strong>{{ extra.waste.total|money }}/mo · {{ (extra.waste.total * 12)|money }}/yr</strong></div>
+  <p class="small muted">Tool-consolidation opportunities (SAAS-003) are listed separately and not included in the total.</p>
+</section>
+{% endif %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf_field, findings_table with context %}
+{% block content %}
+<p class="crumbs"><a href="/saas">SaaS register</a> / {{ app_rec.product or "New subscription" }}</p>
+<div class="page-head"><h1>{{ (app_rec.vendor ~ " " ~ app_rec.product) if app_rec.id else "Add a SaaS subscription" }}</h1></div>
+{% for e in errors %}<div class="alert alert-error">{{ e }}</div>{% endfor %}
+
+{% if findings %}
+<section class="card">
+  <h2>Active findings</h2>
+  {{ findings_table(findings, show_cost=true) }}
+</section>
+{% endif %}
+
+<form method="post" action="/saas/save" class="card form">
+  {{ csrf_field() }}
+  <input type="hidden" name="id" value="{{ app_rec.id or '' }}">
+  <fieldset class="form-grid" {{ 'disabled' if not is_admin }}>
+    <label>Vendor <input name="vendor" value="{{ app_rec.vendor or '' }}" required maxlength="120"></label>
+    <label>Product <input name="product" value="{{ app_rec.product or '' }}" required maxlength="120"></label>
+    <label>Category <input name="category" value="{{ app_rec.category or '' }}" maxlength="120" placeholder="e.g. Video conferencing" list="cats"></label>
+    <label>Business owner <input name="owner" value="{{ app_rec.owner or '' }}" maxlength="120" placeholder="Team or person"></label>
+    <label>Seats purchased <input name="seats_purchased" type="number" min="0" value="{{ app_rec.seats_purchased or 0 }}"></label>
+    <label>Seats in use <input name="seats_used" type="number" min="0" value="{{ app_rec.seats_used or 0 }}"></label>
+    <label>Monthly cost ({{ config.currency_symbol }}) <input name="monthly_cost" type="number" min="0" step="0.01" value="{{ app_rec.monthly_cost or 0 }}"></label>
+    <label>Billing cycle
+      <select name="billing_cycle">
+        <option value="annual" {{ 'selected' if app_rec.billing_cycle == 'annual' }}>Annual</option>
+        <option value="monthly" {{ 'selected' if app_rec.billing_cycle == 'monthly' }}>Monthly</option>
+      </select>
+    </label>
+    <label>Renewal date <input name="renewal_date" type="date" value="{{ app_rec.renewal_date or '' }}"></label>
+    <label>Notice period (days) <input name="notice_days" type="number" min="0" value="{{ app_rec.notice_days or 0 }}"></label>
+  </fieldset>
+  <datalist id="cats">{% for c in ["Video conferencing","Team chat","File storage","E-signature","Project tracking","CRM","Email security","PDF editing","Whiteboarding","Password manager","HR system","Accounting"] %}<option value="{{ c }}">{% endfor %}</datalist>
+  <label>Notes <textarea name="notes" rows="3" maxlength="1000" {{ 'disabled' if not is_admin }}>{{ app_rec.notes or '' }}</textarea></label>
+  {% if is_admin %}
+  <div class="btn-row">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn btn-ghost" href="/saas">Cancel</a>
+  </div>
+  {% endif %}
+</form>
+{% if is_admin and app_rec.id %}
+<form method="post" action="/saas/{{ app_rec.id }}/delete">
+  {{ csrf_field() }}
+  <button class="btn btn-danger btn-sm" type="submit" data-confirm="Delete this subscription from the register?">Delete subscription</button>
+</form>
+{% endif %}
+{% endblock %}
